@@ -1,0 +1,17 @@
+#whole_page {
+    background-color: #c7d4d9;
+    padding: 20px;
+    font-family: Arial, san-serif;
+    color: #007bff;
+}
+
+@media (min-width: 600px) {
+    body {
+      font-size: 16px;
+    }
+}
+@media (max-width: 599px) {
+    body {
+    font-size: 12px;
+    }
+}
