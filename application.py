@@ -28,10 +28,9 @@ message = 'welcome'
 @app.route("/", methods = ['GET', 'POST'])
 def index():
     message = ''
-    if 'loggedin' in session:
-    	return render_template("index.html", username = session['username'] )
-
-    return render_template('login.html')
+    if 'loggedin' not in session:
+        return render_template('login.html', message = 'login first')
+    return render_template("index.html", username = session['username'] )
 
 @app.route("/login", methods = ['GET', 'POST'])
 def login():
@@ -91,17 +90,83 @@ def logout():
 @app.route("/search", methods = ['GET', 'POST'])
 def search():
     message = ''
+    if 'loggedin' not in session:
+        return render_template('login.html', message = 'login first')
+
     if request.method == 'POST' and request.form['search_info'] != '':
         if request.form['search_by'] == 'isbn':
             isbn = (request.form['search_info'])
             books = db.execute("SELECT * FROM books WHERE isbn LIKE :isbn", {"isbn": '%' + isbn + '%'}).fetchall()
         elif request.form['search_by'] == 'title':
             title = (request.form['search_info'])
-            books = db.execute("SELECT * FROM books WHERE title LIKE :title", {"title": title}).fetchall()
+            books = db.execute("SELECT * FROM books WHERE title LIKE :title", {"title": '%' + title + '%'}).fetchall()
         else:
             author =(request.form['search_info'])
-            books = db.execute("SELECT * FROM books WHERE author LIKE :author", {"author":author}).fetchall()
+            books = db.execute("SELECT * FROM books WHERE author LIKE :author", {"author": '%' + author + '%'}).fetchall()
         return render_template('search.html', message = message, books = books)
     else:
         message = 'empty search box'
     return render_template('search.html', message = message)
+
+@app.route("/books")
+def books():
+    if 'loggedin' not in session:
+        return render_template('login.html', message = 'login first')
+    books = db.execute("SELECT * FROM books").fetchall()
+    return render_template('books.html', books = books)
+
+
+
+@app.route("/books/<int:book_id>", methods = ['GET', 'POST'])
+def book(book_id):
+    message = ''
+    if 'loggedin' not in session:
+        return render_template('login.html', message = 'login first')
+    average_rating = False
+    work_ratings_count = False
+    if request.method == 'POST' and request.form['review'] != '' and request.form.get("rating"):
+        review = request.form['review']
+        rating = request.form['rating']
+        db.execute('INSERT INTO reviews( id,book_id,review,rating) values (:id,:book_id,:review,:rating);' , {"id": session['id'] , "book_id": book_id, "review": review,"rating": rating })
+        db.commit()
+        message = 'review submitted'
+    elif request.method == 'POST':
+        message = 'fill the review form properly'
+
+    book = db.execute("SELECT * FROM books WHERE book_id = :book_id", {"book_id": book_id}).fetchone()
+    if book is None:
+        return render_template("search.html", message="no book found.")
+    review = db.execute("SELECT * FROM reviews WHERE id = :id AND book_id = :book_id", {"id": session['id'],"book_id": book_id}).fetchone()
+    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={'key': 'n8mHOUl5fgaj7uEiG5A2kA', 'isbns': book.isbn})
+    if res.status_code != 200:
+        message = 'unable get review info from goodreads'
+    else:
+        data = res.json()
+        average_rating = data['books'][0]['average_rating']
+        work_ratings_count = data['books'][0]['work_ratings_count']
+    return render_template('book.html', book = book, review = review, message = message, username = session['username'], average_rating = average_rating, work_ratings_count = work_ratings_count )
+
+@app.route("/api/<string:isbn>")
+def api(isbn):
+    #getting book info from my db
+    book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+    if book is None:
+        return jsonify({"error": "Invalid isbn"}), 404
+    #getting rating and rating count from my goodreads db
+    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={'key': 'n8mHOUl5fgaj7uEiG5A2kA', 'isbns': book.isbn})
+    if res.status_code != 200:
+        average_rating = ''
+        work_ratings_count = ''
+    else:
+        data = res.json()
+        average_rating = data['books'][0]['average_rating']
+        work_ratings_count = data['books'][0]['work_ratings_count']
+    
+    return jsonify({
+            "title": book.title,
+            "author": book.author,
+            "year": book.year,
+            "isbn": book.isbn,
+            "review_count": work_ratings_count,
+            "average_score": average_rating,
+        })
