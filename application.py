@@ -136,15 +136,16 @@ def book(book_id):
     book = db.execute("SELECT * FROM books WHERE book_id = :book_id", {"book_id": book_id}).fetchone()
     if book is None:
         return render_template("search.html", message="no book found.")
-    review = db.execute("SELECT * FROM reviews WHERE id = :id AND book_id = :book_id", {"id": session['id'],"book_id": book_id}).fetchone()
+    review = db.execute("SELECT * FROM reviews JOIN Users ON reviews.id = Users.id WHERE book_id = :book_id", {"book_id": book_id}).fetchall()
     res = requests.get("https://www.goodreads.com/book/review_counts.json", params={'key': 'n8mHOUl5fgaj7uEiG5A2kA', 'isbns': book.isbn})
+    user_review = db.execute("SELECT * FROM reviews WHERE id = :id AND book_id = :book_id", {"id": session['id'],"book_id": book_id}).fetchone()
     if res.status_code != 200:
         message = 'unable get review info from goodreads'
     else:
         data = res.json()
         average_rating = data['books'][0]['average_rating']
         work_ratings_count = data['books'][0]['work_ratings_count']
-    return render_template('book.html', book = book, review = review, message = message, username = session['username'], average_rating = average_rating, work_ratings_count = work_ratings_count )
+    return render_template('book.html', book = book, review = review, message = message, id = session['id'], average_rating = average_rating, work_ratings_count = work_ratings_count, user_review =user_review )
 
 @app.route("/api/<string:isbn>")
 def api(isbn):

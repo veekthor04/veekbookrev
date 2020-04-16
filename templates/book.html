@@ -42,18 +42,8 @@
           </div>
       </div>
 	   </div>
-    {% if review %}
-      <blockquote class="blockquote text-center">
-        <p class="mb-0">{{review.review}}</p>
-        <footer class="blockquote-footer">by {{username}} in <cite title="Source Title">veekbookrev</cite></footer>
-      </blockquote>
-      <div class="card text-white bg-warning mb-3" style="max-width: 18rem;">
-        <div class="card-header">Your rating</div>
-        <div class="card-body">
-          <h2 class="card-title">{{review.rating}}</h2>
-        </div>
-      </div>
-    {% else %}
+
+    {% if not user_review %}
     <form action="{{ url_for('book', book_id=book.book_id) }}" method="post">
         <div class="form-group">
             <label for="exampleFormControlTextarea1">Review</label>
@@ -86,7 +76,23 @@
             </div>
         </div>
     </form>
+    {% else %}
+    <div class="card text-white bg-warning mb-3" style="max-width: 18rem;">
+        <div class="card-header">Your rating</div>
+        <div class="card-body">
+          <h2 class="card-title">{{user_review.rating}}</h2>
+        </div>
+      </div>
     {% endif %}
+
+    {% for reviews in review %}
+      <blockquote class="blockquote text-center">
+        <p class="mb-0">{{reviews.review}}</p>
+        <footer class="blockquote-footer">by {{reviews.username}} in <cite title="Source Title">veekbookrev</cite></footer>
+      </blockquote>
+    {% else %}
+    <p>no reviews yet</p>    
+    {% endfor %}
 
     {% if average_rating %}
         <div class="card text-white bg-info mb-3" style="max-width: 18rem;">
