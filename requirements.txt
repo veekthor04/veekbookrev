@@ -2,3 +2,13 @@ Flask
 Flask-Session
 psycopg2-binary
 SQLAlchemy
+Jinja2
+MarkupSafe
+requests
+SQLAlchemy
+urllib3
+Werkzeug
+
+# Heroku
+psycopg2
+gunicorn
