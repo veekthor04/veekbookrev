@@ -73,7 +73,7 @@ psycopg2==2.8.5
 psycopg2-binary==2.8.5
 public==2019.4.13
 py==1.8.0
-Pygments==2.4.0
+Pygments==2.7.4
 pylint==2.3.1
 pyparsing==2.4.0
 pyrsistent==0.15.2
